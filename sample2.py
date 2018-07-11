@@ -6,6 +6,8 @@ import hashlib
 import tkinter as tk
 
 
+# Hello!! This is a test comment from nagamine.
+
 # 単語を格納するための空のリスト（単語リスト）を作成
 pre_words = []
 words = []
