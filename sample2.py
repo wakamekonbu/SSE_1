@@ -112,6 +112,7 @@ result2 = search(s,searchword,Ind2)
 print("result1:", result1)
 print("result2:", result2)
 
+
 # GUI関連-------------------------------
 root = tk.Tk()
 root.title(u"Sever has")
