@@ -5,7 +5,7 @@ from numpy.random import *
 import hashlib
 import tkinter as tk
 
-# テキストファイルかどうかをチェックする機能の実装。
+# テキストファイルかどうかをチェックする
 # 対象となるファイルが .txt ならTrue、それ以外なら Falseを返す。
 def text_checker(name):
     text_regex = re.compile(r'.+\.txt')
@@ -14,8 +14,8 @@ def text_checker(name):
     else:
         return False
 
-# テキストファイルの文字列を単語に分割してリスト化する機能の実装。
-def word_list(text):
+# テキストファイルの文字列を単語に分割してリスト化する
+def word_list(list,text):
     f = open(text)
     data = f.read()
     # 空白文字列で区切る。
@@ -23,58 +23,76 @@ def word_list(text):
         word = word.lower() # 大文字 -> 小文字へ
         word = word.replace(".","") # ピリオドを消去
         word = word.replace(",","") # カンマを消去
-        words.append(word) # wordsにwordを追加する
+        list.append(word) # listにwordを追加する
 
 def tp(sk, keyword):
     q = (sk*sk + keyword) % 100
     return q
 
-# txtファイルに存在する単語を格納する空のリスト（単語リスト）を作成
-words = [] # 単語の重複あり
-D = [] # 単語の重複なし　dictionary の D らしい
+def st(s,keyword):
+    # 小文字へ
+    lr = keyword.lower()
+    # sha256というハッシュ関数を用いて、単語の16進数のハッシュ値を生成
+    hash_word_s = hashlib.sha256(lr.encode('utf-8')).hexdigest()
+    # hash_word_sをint型へ変換し、10000で割った余りを計算
+    hash_word_st = int(hash_word_s, 16) % 10000
+    
+    q = tp(s, hash_word_st)
+    seed(s)
+    prg = randint(0, 2, 100) # 0 or 1 の100個の整数の乱数を得る
+    prg_st = prg[q]
+    return q,prg_st # return (q, prg_st)　
 
-directIndex = [[] for i in range(2)] #[[], []]と同じ
+# 単語がファイルに存在するか探索する
+def search(s,keyword,list):
+    searchToken = st(s,keyword)
+    q = int(searchToken[0])
+    prg_st = int(searchToken[1])
+    li = int(list[q])
+    ans = int((li + prg_st) % 2)
+    return ans # keyword が存在すれば 1, しなければ 0 を返す
+
+# ここから-----------------------------------------------------------------------------
+# txtファイルに存在する単語を格納する空のリスト（単語リスト）を作成
+Dict = []
+DI = [[] for i in range(2)] #[[], []]と同じ。 DI は DirectIndex
 counter = -1
+
 # カレントディレクトリ(os.getcwd())にあるファイルを取得する(os.listdir)
 for file in os.listdir(os.getcwd()):
     # txtファイルのみを取り出す
     if text_checker(file):
         counter = counter + 1
-        word_list(file)
+        words = []
+        word_list(words, file) # file に存在する単語を words に格納する
         for w in words:
             # sha256というハッシュ関数を用いて、単語の16進数のハッシュ値を生成
-            hash_word = hashlib.sha256(w.encode('utf-8')).hexdigest()# hash_wordはstr型
+            hash_word = hashlib.sha256(w.encode('utf-8')).hexdigest() # hash_wordはstr型
             # ハッシュ値を整数に変換
             hash_word_10 = int(hash_word,16)
             # 衝突したら弾く
-            if hash_word_10 % 10000 not in directIndex[counter]:
-                directIndex[counter].append(hash_word_10 % 10000)
+            if hash_word_10 % 10000 not in DI[counter]:
+                DI[counter].append(hash_word_10 % 10000)
             
-            # D に words 内の単語を重複しないように追加する
-            if w not in D:
-                D.append(w)
+            # Dict に単語を重複しないように追加する
+            if w not in Dict:
+                Dict.append(w)
     else:
         pass
 
-D1 = directIndex[0]
-D2 = directIndex[1]
 Ind1 = np.zeros(100) # Ind1 = [0, 0, 0, .... 0]
 Ind2 = np.zeros(100) # Ind2 = [0, 0, 0, .... 0]
-
 s = 57 # 乱数のシード
-seed (s) 
-prg = [] 
-prg = randint(0,2,100) # [0, 2)の100個の整数の乱数を得る
+seed(s) # 擬似乱数生成の元となる値(s)を適用。このsの値を変えることで生成される乱数の値も変わる
+prg = randint(0,2,100) # 0 or 1 の100個の整数の乱数を得る
 
-print(D1)
-
-for i in range(len(D1)):
-    q = tp(s, D1[i])
+for i in range(len(DI[0])):
+    q = tp(s, DI[0][i])
     Ind1[q] = 1
     i = i + 1
 
-for i in range(len(D2)):
-    q = tp(s, D2[i])
+for i in range(len(DI[1])):
+    q = tp(s, DI[1][i])
     Ind2[q] = 1
     i= i + 1
 
@@ -85,53 +103,16 @@ for i in range(len(Ind1)):
     Ind1[i] = int((I1+pr) % 2)
     Ind2[i] = int((I2+pr) % 2)
 
-def st(s,keyword):
-    lr = keyword.lower()
-    hash_word_s = hashlib.sha256(lr.encode('utf-8')).hexdigest()
-    hash_word_st = int(hash_word_s, 16)
-    hash_word_st_1 = hash_word_st % 10000
-    s_int = int(s)
-    h_int = int(hash_word_st_1)
-    q = tp(s_int, h_int)
-    seed(s)
-    prg = randint(0, 2, 100)
-    prg_st = prg[q]
-    return q,prg_st
+# 出力
+print("Dict")
+print(Dict)
+searchword= 'cryptography'
+result1 = search(s,searchword,Ind1)
+result2 = search(s,searchword,Ind2)
+print("result1:", result1)
+print("result2:", result2)
 
-
-def search(s,keyword,list):
-    """
-    lr=keyword.lower()
-    hash_word_s= hashlib.sha256(lr.encode('utf-8')).hexdigest()
-    hash_word_st = int(hash_word_s, 16)
-    hash_word_st_1=hash_word_st%10000
-    s_int=int(s)
-    print(s_int)
-    h_int=int(hash_word_st_1)
-    print(h_int)
-    q = tp(s_int,h_int)
-    print(q)
-    seed(s)
-    prg=randint(0,2,100)
-    st=prg[q]
-    """
-    searchToken=st(s,keyword)
-    q=int(searchToken[0])
-    prg_st=int(searchToken[1])
-    li=int(list[q])
-    ans=int((li+prg_st)%2)
-    return ans
-
-print(D)
-searchword='cryptography'
-result1=search(s,searchword,Ind1)
-result2=search(s,searchword,Ind2)
-print(result1)
-print(result2)
-
-
-
-# GUI関連----------------------------
+# GUI関連-------------------------------
 root = tk.Tk()
 root.title(u"Sever has")
 root.geometry("400x300")
