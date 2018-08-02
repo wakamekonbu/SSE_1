@@ -70,15 +70,14 @@ class Client:
         searchToken = self._st_(keyword, fileidx)
         q = int(searchToken[0])
         prg_st = int(searchToken[1])
-        li = int(server.search(q, fileidx))
+        ans = server.search(q, fileidx, prg_st)
 
-        # マスク鍵と検索結果の排他的論理和
-        ans = int((li + prg_st) % 2)
         return ans  # keyword が存在すれば 1, しなければ 0 を返す
 
     def searchAll(self, keyword):
         for i in range(self._filenum_):
-            print("file {}: {}".format(i, bool(self._searchInd_(keyword, i))))
+            res = self._searchInd_(keyword, i)
+            print("{}: {}".format(res[1],res[0]))
 
     def _getMask_(self, q, fileidx):
         # fileidxファイルのq番目の要素に対応するマスク(0 or 1)を返す
@@ -113,21 +112,25 @@ class Client:
         return ind
     
     def uploadFile(self, text):
-        server.uploadIndex(self._genIndex_(text))
+        server.uploadFile(text, self._genIndex_(text))
         self._filenum_ += 1
         print("client: successfully uploaded '"+text+"'")
 
 
 class Server:
     _Inds_ = []  # np.zeros(indlen) for i in range(filenum)
+    _filenames_=[]
 
-    def search(self, q, fileidx):
+    def search(self, q, fileidx, m):
         # q: trapdoor
         # fileidx: 検索するファイルの添字（サンプルなら0か1）
-        return self._Inds_[fileidx][q]
+        # m: mask
+        ans = bool(int(self._Inds_[fileidx][q]) ^ m)
+        return ans, self._filenames_[fileidx]
 
-    def uploadIndex(self, ind):
+    def uploadFile(self, name, ind):
         self._Inds_.append(ind)
+        self._filenames_.append(name)
 
 
 client = Client()
