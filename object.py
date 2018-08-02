@@ -44,7 +44,7 @@ class Client:
         q = (self._s_*self._s_ + keyword) % indlen
         return q
 
-    def _st_(self, keyword):
+    def _st_(self, keyword, fileidx):
         # 小文字へ
         lr = keyword.lower()
         # sha256というハッシュ関数を用いて、単語の16進数のハッシュ値を生成
@@ -57,8 +57,8 @@ class Client:
 
         seed(self._s_)
         # prg: マスク共通鍵
-        prg = randint(0, 2, indlen)  # 0 or 1 の100個の整数の乱数を得る
-        prg_st = prg[q]
+        
+        prg_st = self._getMask_(q, fileidx)
 
         return q, prg_st  # return (q, prg_st)　
 
@@ -67,7 +67,7 @@ class Client:
         # keyword 検索文字列
         # fileidx 検索するファイルの添字（サンプルなら0か1）
 
-        searchToken = self._st_(keyword)
+        searchToken = self._st_(keyword, fileidx)
         q = int(searchToken[0])
         prg_st = int(searchToken[1])
         li = int(server.search(q, fileidx))
