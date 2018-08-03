@@ -147,6 +147,11 @@ class Client:
             q = self._tp_(x)
             raw_ind[q] = 1
 
+        # インデックスをマスク 
+        for i in range(indlen):
+            pr = self._prg_[i] #filenumが+1されてないのは、配列の添字としてそのままつかってるから
+            # 排他的論理和。
+            raw_ind[i] = int((raw_ind[i]+pr) % 2)
         return raw_ind
 
     def uploadFile(self, text):
