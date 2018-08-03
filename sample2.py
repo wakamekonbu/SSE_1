@@ -24,11 +24,9 @@ def word_list(list,text):
         word = word.replace(".","") # ピリオドを消去
         word = word.replace(",","") # カンマを消去
         list.append(word) # listにwordを追加する
-
 def tp(sk, keyword):
     q = (sk*sk + keyword) % 100
     return q
-
 def st(s,keyword):
     # 小文字へ
     lr = keyword.lower()
