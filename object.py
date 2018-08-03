@@ -30,6 +30,7 @@ class Client:
     _filenum_=0
     _prg_ = None
     unq_prg = []
+    _raw_Inds_=[] #np.zeros(indlen) for i in range(filenum)
 
     def __init__(self):
         seed(self._s_)
@@ -51,7 +52,8 @@ class Client:
         #ユーザー固有の疑似乱数の情報も追加
         for i in range(indlen):
           self.unq_prg[filenum][i]=(self._prg_[i]+self.unq_prg[filenum][i])%2
-        #デバッグ用
+        
+        #デバッグ用。ファイル固有のprgを表示
         print(self.unq_prg[filenum])
 
     def _tp_(self, keyword):
@@ -71,7 +73,6 @@ class Client:
         # q: インデックスの添字
         q = self._tp_(hash_word_st)
 
-        #seed(self._s_)
         # prg: マスク共通鍵
         #prg = randint(0, 2, indlen) # 0 or 1 の100個の整数の乱数を得る
         prg_st = self.unq_prg[fileidx][q]
@@ -88,21 +89,13 @@ class Client:
         prg_st = int(searchToken[1])
         
         ans=server.search(q,fileidx,prg_st)
-        
-        """
-        li = int(server.search(q, fileidx))
-         # マスク鍵と検索結果の排他的論理和
-        ans = int((li + prg_st) % 2)
-        """
         return ans # keyword が存在すれば 1, しなければ 0 を返す
+
     def searchAll(self, keyword):
         for i in range(self._filenum_):
           res = self._searchInd_(keyword, i)
           print("{}: {}".format(res[1],res[0]))
           
-          """
-          print("file {}: {}".format(i, bool(self._searchInd_(keyword, i))))
-          """
     def _getMask_(self, q, fileidx):
         # fileidxファイルのq番目の要素に対応するマスク(0 or 1)を返す
         #return self._prg_[q]
@@ -122,43 +115,56 @@ class Client:
             # 衝突したら弾く（つまりその単語は検索不可能）
             if hash_word_10 % 10000 not in di:
                 di.append(hash_word_10 % 10000)
-        
         # マスク前のインデックス生成
         for x in di:
             q = self._tp_(x)
             ind[q] = 1
-#TODO　ここのインデックスの類似度計算（デモ用）
 
-        # インデックスをマスク TODO なんかgetMaskの引数違う
+
+        # インデックスをマスク 
         for i in range(indlen):
-            pr = self._getMask_(i, self._filenum_)
+            pr = self._getMask_(i, self._filenum_) #filenumが+1されてないのは、配列の添字としてそのままつかってるから
             # 排他的論理和。
             ind[i] = int((ind[i]+pr) % 2)
         
         return ind
-    
-    """
-    def uploadFile(self, text):
-        server.uploadIndex(self._genIndex_(text))
-        self._filenum_+=1
-        print("client: successfully uploaded '"+text+"'")
-    """
+
+    def _genRawIndex_(self, text):
+        words=[]
+        word_list(words, text)
+        di=[] # text に含まれる単語のハッシュのリスト
+        raw_ind=np.zeros(indlen)
+        for w in words:
+            # sha256というハッシュ関数を用いて、単語の16進数のハッシュ値を生成
+            hash_word = hashlib.sha256(w.encode('utf-8')).hexdigest() # hash_wordはstr型
+            # ハッシュ値を整数に変換
+            hash_word_10 = int(hash_word,16)
+            # 衝突したら弾く（つまりその単語は検索不可能）
+            if hash_word_10 % 10000 not in di:
+                di.append(hash_word_10 % 10000)
+        # マスク前のインデックス生成
+        for x in di:
+            q = self._tp_(x)
+            raw_ind[q] = 1
+
+        return raw_ind
 
     def uploadFile(self, text):
         server.uploadFile(text, self._genIndex_(text))
+        ind=self._genRawIndex_(text)
+        self._raw_Inds_.append(ind)
         self._filenum_ += 1
         print("client: successfully uploaded '"+text+"'")
 
+    def mal_get_correctSimilarity(self):
+        # 悪意ある管理者が文書の類似度を得る
+        for i in range(len(self._raw_Inds_)):
+            for j in range(i+1, len(self._raw_Inds_)):
+                print("accurate similarity of {}.txt and {}.txt is:".format(i+1,j+1), sum(t==s for (t,s) in zip(self._raw_Inds_[i],self._raw_Inds_[j]))/indlen)
 
 class Server:
     _Inds_=[] #np.zeros(indlen) for i in range(filenum)
     _filenames_=[]
-    """
-    def search(self, q, fileidx):
-        # q: trapdoor
-        # fileidx: 検索するファイルの添字（サンプルなら0か1）
-        return self._Inds_[fileidx][q]
-    """
     def search(self,q,fileidx,m):
         # q: trapdoor
         # fileidx: 検索するファイルの添字（サンプルなら0か1）
@@ -169,16 +175,13 @@ class Server:
     def uploadFile(self, name, ind):
         self._Inds_.append(ind)
         self._filenames_.append(name)
-    """
-    def uploadIndex(self, ind):
-        self._Inds_.append(ind)
-    """ 
 
-    def mal_getSimilarity(self):
+    def mal_get_mnglessSimilarity(self):
         # 悪意ある管理者が文書の類似度を得る
         for i in range(len(self._Inds_)):
             for j in range(i+1, len(self._Inds_)):
-                print("similarity of {} and {} is:".format(i,j), sum(t==s for (t,s) in zip(self._Inds_[i],self._Inds_[j]))/indlen)
+                print("similarity of {}.txt and {}.txt for malicious attacker is:".format(i+1,j+1), sum(t==s for (t,s) in zip(self._Inds_[i],self._Inds_[j]))/indlen)
+
 
 client = Client()
 server = Server()
@@ -188,6 +191,8 @@ for file in os.listdir(os.path.join(os.getcwd(),"files")):
     if text_checker(file):
       client._fileunique_prg_(file,client._filenum_)
       client.uploadFile(file)
+server.mal_get_mnglessSimilarity()
+client.mal_get_correctSimilarity()
 
 while True:
     keyword = input("search: ")
