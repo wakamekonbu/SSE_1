@@ -180,7 +180,7 @@ class Server:
         # fileidx: 検索するファイルの添字（サンプルなら0か1）
         # m: mask
         ans = bool(int(self._Inds_[fileidx][q]) ^ m)
-        self._maskInfo_[fileidx][q] = m
+        self._maskInfo_[fileidx][q] = m  # 悪意ある管理者が作成
         return ans, self._filenames_[fileidx]
 
     def uploadFile(self, name, ind):
@@ -195,7 +195,7 @@ class Server:
                 print("similarity of {}.txt and {}.txt for malicious attacker is:".format(i+1, j+1),
                       sum(t == s for (t, s) in zip(self._Inds_[i], self._Inds_[j]))/indlen)
 
-    def get_similarity_with_maskInfo(self):
+    def get_similarity_with_maskInfo(self):  # 悪意ある管理者が作成
         inds = self._Inds_
         # マスクが分かっていればマスクを外す
         for i in range(len(self._Inds_)):
