@@ -24,7 +24,7 @@ def word_list(list,text):
         word = word.replace(",","") # カンマを消去
         list.append(word) # listにwordを追加する
 
-indlen=100
+indlen=250
 class Client:
     _s_=57
     _filenum_=0
@@ -51,10 +51,10 @@ class Client:
         self.unq_prg.append(tmp)
         #ユーザー固有の疑似乱数の情報も追加
         for i in range(indlen):
-          self.unq_prg[filenum][i]=(self._prg_[i]+self.unq_prg[filenum][i])%2
+          self.unq_prg[filenum][i]=int((self._prg_[i]+self.unq_prg[filenum][i]))%2
         
         #デバッグ用。ファイル固有のprgを表示
-        print(self.unq_prg[filenum])
+        #print(self.unq_prg[filenum])
 
     def _tp_(self, keyword):
         # ハッシュ化されたkeywordから添字を得る
@@ -72,11 +72,15 @@ class Client:
             
         # q: インデックスの添字
         q = self._tp_(hash_word_st)
-
+        #デバッグ用
+        #print("raw q is "+str(q))
         # prg: マスク共通鍵
         #prg = randint(0, 2, indlen) # 0 or 1 の100個の整数の乱数を得る
         prg_st = self.unq_prg[fileidx][q]
-
+        
+        #デバッグ用
+        #print("prg_st is "+str(prg_st))
+        
         return q, prg_st # return (q, prg_st)　
     
     def _searchInd_(self, keyword, fileidx):
@@ -87,12 +91,14 @@ class Client:
         searchToken = self._st_(keyword,fileidx)
         q = int(searchToken[0])
         prg_st = int(searchToken[1])
-        
         ans=server.search(q,fileidx,prg_st)
         return ans # keyword が存在すれば 1, しなければ 0 を返す
 
     def searchAll(self, keyword):
         for i in range(self._filenum_):
+          
+          #デバッグ用
+          #print(str(i))
           res = self._searchInd_(keyword, i)
           print("{}: {}".format(res[1],res[0]))
           
@@ -126,6 +132,8 @@ class Client:
             pr = self._getMask_(i, self._filenum_) #filenumが+1されてないのは、配列の添字としてそのままつかってるから
             # 排他的論理和。
             ind[i] = int((ind[i]+pr) % 2)
+        #デバッグ用
+        #print(ind)
         
         return ind
 
@@ -170,11 +178,23 @@ class Client:
 class Server:
     _Inds_=[] #np.zeros(indlen) for i in range(filenum)
     _filenames_=[]
+    _search_result_= None #攻撃者による比較推定法用の配列
+    _search_count_ = 0
+
     def search(self,q,fileidx,m):
         # q: trapdoor
         # fileidx: 検索するファイルの添字（サンプルなら0か1）
         # m: mask
+
+        #デバッグ用#
+        #print(self._Inds_[fileidx][q])
+        #print(client._raw_Inds_[fileidx][q])
+        #print(m)
+        
         ans = bool(int(self._Inds_[fileidx][q]) ^ m)
+        self._search_result_[fileidx].append(ans)
+
+
         return ans, self._filenames_[fileidx]
       
     def uploadFile(self, name, ind):
@@ -187,6 +207,21 @@ class Server:
             for j in range(i+1, len(self._Inds_)):
                 print("similarity of {}.txt and {}.txt for malicious attacker is:".format(i+1,j+1), sum(t==s for (t,s) in zip(self._Inds_[i],self._Inds_[j]))/indlen)
 
+    def mal_rslt_Similarity(self):
+        #F_F の重み係数
+        coeff=1
+        for i in range(0,len(self._filenames_)):
+          for j in range(i+1,len(self._filenames_)):
+            T_T=0
+            F_F=0
+            print(self._filenames_[i]+" and "+self._filenames_[j])
+            for k in range(self._search_count_):
+              T_T = T_T + float(self._search_result_[i][k] and self._search_result_[j][k])
+              F_F = F_F +float(not (self._search_result_[i][k] or self._search_result_[j][k]))
+            similarity = (T_T + F_F* coeff)/float(self._search_count_)
+            print(similarity)
+
+
 
 client = Client()
 server = Server()
@@ -196,6 +231,7 @@ for file in os.listdir(os.path.join(os.getcwd(),"files")):
     if text_checker(file):
       client._fileunique_prg_(file,client._filenum_)
       client.uploadFile(file)
+server._search_result_=[[] for i in range(client._filenum_)]
 server.mal_get_mnglessSimilarity()
 client.mal_get_correctSimilarity()
 
@@ -204,3 +240,6 @@ while True:
     if(keyword == "exit()" or keyword == "quit()"):
         exit()
     client.searchAll(keyword)
+    server._search_count_=server._search_count_+1
+    print(server._search_result_)
+    server.mal_rslt_Similarity()
