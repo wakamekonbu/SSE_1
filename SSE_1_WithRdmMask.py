@@ -257,6 +257,8 @@ while True:
     if(keyword == "exit()" or keyword == "quit()"):
         print("------------")
         client.mal_get_correctSimilarity()
+        print("------------")
+        server.mal_get_mnglessSimilarity()
         exit()
     client.searchAll(keyword)
     server._search_count_=server._search_count_+1

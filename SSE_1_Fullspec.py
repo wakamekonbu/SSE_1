@@ -5,7 +5,7 @@ from numpy.random import *
 import hashlib
 
 
-indlen = 400
+indlen = 2500
 
 
 # テキストファイルかどうかをチェックする
