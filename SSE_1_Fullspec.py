@@ -5,7 +5,7 @@ from numpy.random import *
 import hashlib
 
 
-indlen = 2500
+indlen = 2000
 
 
 # テキストファイルかどうかをチェックする
@@ -220,7 +220,7 @@ class Server:
                       sum(t == s for (t, s) in zip(inds[i], inds[j]))/indlen)
 
     def mal_rslt_Similarity(self):
-        coeff=0.7 # F_Fの重み係数
+        coeff=0.9 # F_Fの重み係数
         for i in range(0,len(self._filenames_)):
           for j in range(i+1,len(self._filenames_)):
             T_T=0
