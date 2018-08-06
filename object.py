@@ -220,7 +220,7 @@ class Server:
                       sum(t == s for (t, s) in zip(inds[i], inds[j]))/indlen)
 
     def mal_rslt_Similarity(self):
-        coeff=1 # F_Fの重み係数
+        coeff=0.7 # F_Fの重み係数
         for i in range(0,len(self._filenames_)):
           for j in range(i+1,len(self._filenames_)):
             T_T=0
@@ -229,7 +229,7 @@ class Server:
               T_T = T_T + float(self._search_result_[i][k] and self._search_result_[j][k])
               F_F = F_F +float(not (self._search_result_[i][k] or self._search_result_[j][k]))
             similarity = (T_T + F_F* coeff)/float(self._search_count_)
-            print("similarity with result of "+self._filenames_[i]+" and "+self._filenames_[j]+" is : "+str(similarity))
+            print("similarity of "+self._filenames_[i]+" and "+self._filenames_[j]+" with the result is : "+str(similarity))
 
 
 
@@ -255,7 +255,13 @@ while True:
     keyword = input("search: ")
     if(keyword == "exit()" or keyword == "quit()"):
         server.get_similarity_with_maskInfo()
+        print("------------")
+        server.mal_rslt_Similarity()
+        print("------------")
+        server.mal_get_mnglessSimilarity()
+        print("------------")
+        client.mal_get_correctSimilarity()
+        print("------------")
         exit()
     client.searchAll(keyword)
     server._search_count_=server._search_count_+1
-    server.mal_rslt_Similarity()
