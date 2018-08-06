@@ -5,7 +5,7 @@ from numpy.random import *
 import hashlib
 
 
-indlen = 1000
+indlen = 400
 
 
 # テキストファイルかどうかをチェックする
@@ -253,15 +253,16 @@ print("------------")
 
 while True:
     keyword = input("search: ")
+    print("")
     if(keyword == "exit()" or keyword == "quit()"):
-        server.get_similarity_with_maskInfo()
-        print("------------")
-        server.mal_rslt_Similarity()
-        print("------------")
-        server.mal_get_mnglessSimilarity()
         print("------------")
         client.mal_get_correctSimilarity()
         print("------------")
+        server.mal_get_mnglessSimilarity()
+        print("------------")
+        server.mal_rslt_Similarity()
+        print("------------")
+        server.get_similarity_with_maskInfo()
         exit()
     client.searchAll(keyword)
     server._search_count_=server._search_count_+1
